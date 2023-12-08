@@ -1,0 +1,66 @@
+// This code defines a middleware function named validateAdmin, which is intended to be used in an Express.js application. This middleware is designed to 
+perform authentication and authorization checks for routes that require admin access.
+
+// Let's break down the main components of the code:
+
+// Function Signature:
+
+// const validateAdmin = (sKey, eType) => {
+// The function takes two parameters, sKey and eType. These parameters are used in the authorization checks within the middleware.
+
+// Middleware Function:
+
+// return async (req, res, next) => {
+// This is the main middleware function that takes the standard Express.js middleware parameters (req, res, next). It is an asynchronous function, indicating the use of asynchronous operations within the middleware.
+
+// Token Validation:
+
+// const token = req.header('Authorization')
+// if (!token) {
+//   // Handling the case where the Authorization header is missing
+//   return res.status(status.unauthorized).jsonp({
+//     status: jsonStatus.unauthorized,
+//     message: messages[req.userLanguage].err_unauthorized
+//   })
+// }
+// The middleware checks for the presence of an Authorization token in the request header. If the token is missing, it returns a 401 Unauthorized response.
+
+// Admin Retrieval:
+
+
+// let admin
+// try {
+//   admin = await AdminsModel.findByToken(token)
+// } catch (err) {
+//   // Handling errors while retrieving admin by token
+//   return res.status(status.unauthorized).jsonp({
+//     status: jsonStatus.unauthorized,
+//     message: messages[req.userLanguage].err_unauthorized
+//   })
+// }
+// if (!admin) {
+//   // Handling the case where no admin is found for the provided token
+//   return res.status(status.unauthorized).jsonp({
+//     status: jsonStatus.unauthorized,
+//     message: messages[req.userLanguage].err_unauthorized
+//   })
+// }
+// The middleware attempts to retrieve an admin user based on the provided token using the AdminsModel. If the retrieval fails or no admin is found, it returns a 401 Unauthorized response.
+
+// Admin Assignment to Request Object:
+
+// req.admin = admin
+// If an admin is successfully retrieved, it assigns the admin object to the req object. This allows subsequent middleware or route handlers to access the admin information.
+
+// Authorization Checks:
+// The middleware performs various authorization checks based on the admin's eType (admin type) and sKey (specific key). These checks involve verifying permissions and roles.
+
+// Error Handling:
+// The middleware handles different error scenarios, such as validation errors, permission denied errors, and internal server errors. It returns appropriate responses with status codes and error messages.
+
+// Middleware Invocation:
+
+// return next(null, null)
+// Finally, if all checks pass without errors, the middleware calls the next function to pass control to the next middleware or route handler in the Express.js request-response cycle.
+
+// In summary, this middleware is responsible for ensuring that requests are made by authenticated admins with the necessary permissions. It performs token validation, admin retrieval, authorization checks, and error handling. The specific authorization logic depends on the admin's type (eType), and the key (sKey) represents a specific action or resource.
