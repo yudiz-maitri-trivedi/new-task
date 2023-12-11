@@ -248,52 +248,6 @@ class AdminAuth {
   }
 
   /**
-   * for super user => Create sub-admin
-   * @body {*} req  aRole', 'sName', 'sUsername', 'sEmail', 'sMobNum', 'sPassword', 'eStatus'
-   * @param {*} res  Message => admin create successfully
-   * @returns  Message => admin create successfully
-   */
-  // async createSubAdminV4 (req, res) {
-  //   try {
-  //     req.body = pick(req.body, ['aRole', 'sName', 'sUsername', 'sEmail', 'sMobNum', 'sPassword', 'eStatus'])
-
-  //     let { sName, sUsername, sEmail, sMobNum, aRole, eStatus } = req.body
-
-  //     sEmail = sEmail.toLowerCase().trim()
-
-  //     // only super admin has rights to create sub admin
-  //     if (req.admin.eType !== 'SUPER') return res.status(status.unauthorized).jsonp({ status: jsonStatus.unauthorized, message: messages[req.userLanguage].access_denied })
-
-  //     if (!checkAlphanumeric(sUsername)) return res.status(status.badRequest).jsonp({ status: jsonStatus.badRequest, message: messages[req.userLanguage].must_alpha_num })
-
-  //     if (validateMobile(sMobNum)) return res.status(status.badRequest).jsonp({ status: jsonStatus.badRequest, message: messages[req.userLanguage].invalid.replace('##', messages[req.userLanguage].mobileNumber) })
-  //     // We'll check that role that is to be assigned to sub admin is active or not.
-  //     const roles = await RolesModel.find({ _id: { $in: aRole }, eStatus: 'Y' }, { _id: 1 }).lean()
-  //     if (!roles.length) return res.status(status.notFound).jsonp({ status: jsonStatus.notFound, message: messages[req.userLanguage].do_not_exist.replace('##', messages[req.userLanguage].croles) })
-
-  //     sEmail = await encryptKeyPromise(sEmail)
-  //     sMobNum = await encryptKeyPromise(sMobNum)
-
-  //     const adminExist = await AdminsModel.findOne({ $or: [{ sEmail }, { sMobNum }, { sUsername }] }).lean()
-  //     if (adminExist && adminExist.sUsername === sUsername) return res.status(status.ResourceExist).jsonp({ status: jsonStatus.ResourceExist, message: messages[req.userLanguage].already_exist.replace('##', messages[req.userLanguage].username) })
-  //     if (adminExist && adminExist.sMobNum === sMobNum) return res.status(status.ResourceExist).jsonp({ status: jsonStatus.ResourceExist, message: messages[req.userLanguage].already_exist.replace('##', messages[req.userLanguage].mobileNumber) })
-  //     if (adminExist && adminExist.sEmail === sEmail) return res.status(status.ResourceExist).jsonp({ status: jsonStatus.ResourceExist, message: messages[req.userLanguage].already_exist.replace('##', messages[req.userLanguage].email) })
-  //     const newAdmin = new AdminsModel({ ...req.body, sEmail, sMobNum, aRole: roles, eType: 'SUB' })
-  //     await newAdmin.save()
-
-  //     // Log the record for future purpose to know which super admin has create sub admin
-  //     // const { _id: iAdminId } = req.admin
-  //     // const oNewFields = { sName, sUsername, sEmail, sMobNum, aRole, eStatus }
-  //     // const logData = { oOldFields: {}, oNewFields, iAdminId: ObjectId(iAdminId), sIP: getIp(req), eKey: 'SUB', sLatitude: req.admin.sLatitude, sLongitude: req.admin.sLongitude }
-  //     // await adminServices.adminLog(req, res, logData)
-
-  //     return res.status(status.OK).jsonp({ status: jsonStatus.OK, message: messages[req.userLanguage].add_success.replace('##', messages[req.userLanguage].subAdmin) })
-  //   } catch (error) {
-  //     return catchError('AdminAuth.createSubAdminV4', error, req, res)
-  //   }
-  // }
-
-  /**
   * Give you a Admin Authorization token to run test script.
   * @returns Authorization token.
   */
