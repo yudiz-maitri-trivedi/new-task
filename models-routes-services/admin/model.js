@@ -33,9 +33,9 @@ const Admin = new mongoose.Schema({
   }],
   dLoginAt: { type: Date },
   dPasswordChangeAt: { type: Date },
-  // sVerificationToken: { type: String },
+  sVerificationToken: { type: String },
   // sExternalId: { type: String },
-  // sDepositToken: { type: String },
+  sDepositToken: { type: String },
   bLoggedOut: { type: Boolean, default: false }
 }, { timestamps: { createdAt: 'dCreatedAt', updatedAt: 'dUpdatedAt' } })
 
@@ -80,7 +80,7 @@ Admin.statics.findByToken = async function (token) {
   const query = {
     _id: decoded._id,
     'aJwtTokens.sToken': token,
-    eStatus: 'Y',
+    eStatus: 'a',
     bLoggedOut: false
   }
 
@@ -102,7 +102,7 @@ Admin.statics.findByRefreshToken = async function (token) {
   }
   const query = {
     _id: decoded._id,
-    eStatus: 'Y',
+    eStatus: 'a',
     bLoggedOut: false
   }
 

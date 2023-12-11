@@ -1,34 +1,134 @@
-const { connection } = require('./database/mongoose')
-const Admin = require('./models-routes-services/admin/model')
 const fs = require('fs')
-const filePath = '.data.json'
-const config = require('./config/config')
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
+const saltRounds = 1
+const salt = bcrypt.genSaltSync(saltRounds)
+const { JWT_SECRET, REDIS_HOST, REDIS_PORT } = require('./config/config')
+// const Path = '..data.json'
+const AdminModel = require('./models-routes-services/admin/model')
+// const CredentialModel = require('./models-routes-services/admin/credential.model')
+// const PermissionsModel = require('./models-routes-services/admin/permissions/model')
+// const { encryption } = require('./helper/utilityServices')
 
-connection(config.ADMINS_DB_URL, 'Admins')
+const adminPayloads = [
+  {
+    sName: 'super admin 1',
+    sUsername: 'superadmin',
+    sEmail: 'maitri.trivedi@yudiz.com',
+    sMobNum: '9979132145',
+    sPassword: 'Super@123',
+    eType: 'SUPER',
+    ePlatform: 'O'
+  }, {
+    sName: 'super admin 2',
+    sUsername: 'admin123',
+    sEmail: 'maitri.triv@yudiz.com',
+    sMobNum: '9785577535',
+    sPassword: 'yudiz@123',
+    eType: 'SUPER',
+    ePlatform: 'O'
+  }]
 
-const seedDatabase = async (sFilePath, sModel, flag) => {
-  try {
-    if (!fs.existsSync(sFilePath)) {
-      throw new Error('File does not exist at this location.')
-    }
-    const data = fs.readFileSync(sFilePath)
-    const parsedData = JSON.parse(data)
+// const credentialPlayload = {
+//   eKey: 'PAY',
+//   sPassword: 'fantasy@321'
+// }
 
-    if (flag) {
-      await sModel.bulkWrite(
-        [
-          { deleteMany: { filter: {} } },
-          ...parsedData.data.map((document) => ({ insertOne: { document } }))
-        ],
-        { ordered: true }
-      )
+require('./database/mongoose')
+// cachegoose(mongoose, {
+//   engine: 'redis',
+//   host: REDIS_HOST,
+//   port: REDIS_PORT
+// })
+
+function executeFeeder (flag) {
+  return new Promise((resolve, reject) => {
+    (async () => {
+      try {
+        syncModelsUniqueIndexes()
+        // await fileExist(Path, AdminModel, flag)
+
+        for (const adminPayload of adminPayloads) {
+          adminPayload.sPassword = bcrypt.hashSync(adminPayload.sPassword, salt)
+          console.log(123, adminPayload.sPassword)
+          await addNormalSeeds(adminPayload, AdminModel, flag)
+        }
+
+        // credentialPlayload.sPassword = bcrypt.hashSync(credentialPlayload.sPassword, salt)
+        // await addNormalSeeds(credentialPlayload, CredentialModel, flag)
+
+        resolve()
+      } catch (error) {
+        console.log(error)
+      }
+    })()
+  })
+}
+
+function fileExist (path, Model, flag) {
+  fs.stat(path, async function (err, stat) {
+    if (err == null) {
+      await globeFeeder(path, Model, flag)
+    } else if (err.code === 'ENOENT') {
+      console.log(`File does not exist at this location ${path}`)
     } else {
-      await sModel.bulkWrite([...parsedData.data.map((document) => ({ insertOne: { document } }))])
+      throw new Error(err)
     }
-    console.log('Database seeded successfully')
+  })
+}
+
+async function addNormalSeeds (seed, Model, flag) {
+  try {
+    if (flag) {
+      await Model.deleteMany(seed)
+      // await Model.create(seed)
+      const admin = new Model(seed)
+      admin.sDepositToken = jwt.sign({ _id: (admin._id).toHexString() }, JWT_SECRET)
+      await admin.save()
+    } else {
+      const data = await Model.findOne(seed).lean()
+      if (!data) {
+        const admin = new Model(seed)
+        admin.sDepositToken = jwt.sign({ _id: (admin._id).toHexString() }, JWT_SECRET)
+        await admin.save()
+      }
+    }
+    console.log('addNormalSeeds', seed)
   } catch (error) {
-    console.log('Failed to seed database', error)
+    throw new Error(error)
   }
 }
 
-seedDatabase(filePath, Admin)
+async function globeFeeder (sFilePath, Model, flag) {
+  try {
+    if (flag) {
+      const feedData = fs.readFileSync(sFilePath)
+      const parsedData = JSON.parse(feedData)
+      await Model.deleteMany()
+      await Model.insertMany(parsedData)
+    } else {
+      const feedData = fs.readFileSync(sFilePath)
+      const parsedData = JSON.parse(feedData)
+      const data = await Model.find({}).lean()
+      if (!data.length) {
+        await Model.insertMany(parsedData)
+      }
+    }
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+function syncModelsUniqueIndexes () {
+  SyncIndex(AdminModel, 'Admin')
+}
+
+function SyncIndex (Model, sName) {
+  Model.syncIndexes().then(() => {
+    console.log(`${sName} Model Indexes Synced`)
+  }).catch((err) => {
+    console.log(`${sName} Model Indexes Sync Error`, err)
+  })
+}
+
+executeFeeder()

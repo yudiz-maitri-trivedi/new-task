@@ -20,7 +20,10 @@ const message = {
   role_exist: '## is already exist in SubAdmin.',
   error: 'Something went wrong.',
   error_with: 'Something went wrong with ##.',
-  update_success: '## updated successfully.'
+  update_success: '## updated successfully.',
+  verify_otp_err: 'Entered OTP is invalid or expired.',
+  verification_success: 'Verification done successfully.',
+  succ_logout: 'You have successfully logged out!'
 
 }
 

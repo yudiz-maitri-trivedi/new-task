@@ -1,7 +1,7 @@
 const PermissionsModel = require('./model')
 const RoleModel = require('../roles/model')
 const { messages, status, jsonStatus } = require('../../../helper/api.responses')
-const { removenull, catchError, pick } = require('../../../helper/utilityServices')
+const { removeNull, catchError, pick } = require('../../../helper/utilityServices')
 
 class Permission {
   /**
@@ -13,7 +13,7 @@ class Permission {
   async add (req, res) {
     try {
       req.body = pick(req.body, ['sName', 'sKey', 'eStatus', 'sModuleName'])
-      removenull(req.body)
+      removeNull(req.body)
       const { sKey } = req.body
       const oPermissionExist = await PermissionsModel.findOne({ sKey }).lean()
       if (oPermissionExist) return res.status(status.resourceExist).jsonp({ status: jsonStatus.resourceExist, message: messages[req.userLanguage].already_exist.replace('##', messages[req.userLanguage].permission) })

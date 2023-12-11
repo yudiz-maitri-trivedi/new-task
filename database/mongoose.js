@@ -9,6 +9,7 @@ function connection (DB_URL, DB) {
     // const dbConfig = { useNewUrlParser: true, useUnifiedTopology: true, readPreference: 'secondaryPreferred' }
     const conn = mongoose.createConnection(DB_URL)
     conn.on('connected', () => console.log(`Connected to ${DB} database...`))
+    return conn
   } catch (error) {
     console.log(messages.en.mongoDBError, error)
   }

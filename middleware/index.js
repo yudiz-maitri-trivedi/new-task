@@ -1,5 +1,5 @@
 const express = require('express')
-const mongoose = require('mongoose')
+// const mongoose = require('mongoose')
 const path = require('path')
 const bodyParser = require('body-parser')
 const cors = require('cors')
@@ -8,7 +8,7 @@ const helmet = require('helmet')
 // const hpp = require('hpp')
 // const fileUpload = require('express-fileupload')
 
-const config = require('../config/config')
+// const config = require('../config/config')
 
 module.exports = (app) => {
 //   if (process.env.NODE_ENV === 'production') {

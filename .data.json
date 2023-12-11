@@ -1,11 +1,11 @@
 { "data" : [
-    {
-        "sName": "super admin 1",
-        "sUsername": "superadmin",
-        "sEmail": "a71D5XrGdr0y/aSHmd5Sw5ausgVjINpdkDZmREwxKkM=",
-        "sMobNum": "IURmBC6ZPdsXbysOUUoBUg==",
-        "sPassword": "Super@123",
-        "eType": "SUPER"
-      }
+  {
+    "sName": "super admin 1",
+    "sUsername": "superadmin",
+    "sEmail": "maitri.trivedi@yudiz.com",
+    "sMobNum": "9979132145",
+    "sPassword": "Super@123",
+    "eType": "SUPER"
+}
 ]
   }

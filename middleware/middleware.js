@@ -1,10 +1,10 @@
-// const Crypt = require('hybrid-crypto-js').Crypt
-// const crypt = new Crypt()
+const Crypt = require('hybrid-crypto-js').Crypt
+const crypt = new Crypt()
 const AdminsModel = require('../models-routes-services/admin/model')
 const RolesModel = require('../models-routes-services/admin/roles/model')
 const { status, messages, jsonStatus } = require('../helper/api.responses')
 const { validationResult } = require('express-validator')
-// const { PRIVATE_KEY } = require('../config/config')
+const { PRIVATE_KEY, PUBLIC_KEY } = require('../config/config')
 const jwt = require('jsonwebtoken')
 const ObjectId = require('mongoose').Types.ObjectId
 const config = require('../config/config')
@@ -45,62 +45,6 @@ const validateAdmin = (sKey, eType) => {
             errors: errors.array()
           })
         }
-        return next(null, null)
-      } else {
-        if (!req.admin.aRole) return res.status(status.unauthorized).jsonp({ status: jsonStatus.unauthorized, message: messages[req.userLanguage].access_denied })
-        const aRoles = await RolesModel.find({ _id: { $in: req.admin.aRole }, eStatus: 'a' }, { aPermissions: 1 }).lean()
-        if (!aRoles?.length) return res.status(status.unauthorized).jsonp({ status: jsonStatus.unauthorized, message: messages[req.userLanguage].access_denied })
-        let aPermissions = aRoles.map(role => role.aPermissions)
-        aPermissions = [].concat.apply([], aPermissions)
-        const hasPermission = aPermissions.find((permission) => {
-          return (
-            permission.sKey === sKey &&
-            (permission.eType === eType ||
-              (eType === 'R' && permission.eType === 'W'))
-          )
-        })
-
-        if (!hasPermission) {
-          let hasSubAdminPermission
-          if (sKey === 'DEPOSIT' && eType === 'W') {
-            hasSubAdminPermission = aRoles.aPermissions.find((permission) => {
-              return (
-                permission.sKey === 'SYSTEM_USERS' && permission.eType === 'W'
-              )
-            })
-          }
-          if (!hasSubAdminPermission) {
-            let message
-
-            switch (eType) {
-              case 'R':
-                message = messages[req.userLanguage].read_access_denied.replace('##', sKey)
-                break
-              case 'W':
-                message = messages[req.userLanguage].write_access_denied.replace('##', sKey)
-                break
-              case 'N':
-                message = messages[req.userLanguage].access_denied
-                break
-              default:
-                message = messages[req.userLanguage].access_denied
-                break
-            }
-
-            return res.status(status.unauthorized).jsonp({
-              status: jsonStatus.unauthorized,
-              message
-            })
-          }
-        }
-        errors = validationResult(req)
-        if (!errors.isEmpty()) {
-          return res.status(status.internalServerError).jsonp({
-            status: jsonStatus.internalServerError,
-            message: messages[req.userLanguage].error
-          })
-        }
-
         return next(null, null)
       }
     } catch (error) {
@@ -213,11 +157,17 @@ const validate = function (req, res, next) {
   next()
 }
 
+const encryption = function (field) {
+  const encrypted = crypt.encrypt(PUBLIC_KEY, field)
+  return encrypted.toString()
+}
+
 const decryption = function (password) {
   const decrypted = crypt.decrypt(PRIVATE_KEY, password)
   const decryptedData = decrypted.message
   return decryptedData.toString()
 }
+
 const decrypt = function (req, res, next) {
   const { sPassword, sOldPassword, sNewPassword } = req.body
   if (sPassword) {
@@ -287,6 +237,7 @@ module.exports = {
   validate,
   decrypt,
   decryption,
+  encryption,
   isAdminAuthorized,
   isAdminAuthenticated,
   isUserAuthenticated

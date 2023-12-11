@@ -1,13 +1,13 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 const { AdminsDBConnect } = require('../../database/mongoose')
-const { platform, adminLogTypes } = require('../../enum')
+const { ePlatform, eAdminLogTypes } = require('../../enum')
 const AdminModel = require('./model')
 
 const AdminAuthLogs = new Schema({
   iAdminId: { type: Schema.Types.ObjectId, ref: AdminModel },
-  ePlatform: { type: String, enum: platform, required: true }, // A = Android, I = iOS, W = Web, O = Other, AD = Admin
-  eType: { type: String, enum: adminLogTypes }, // L = Login, PC = Password Change, RP = Reset Password
+  ePlatform: { type: String, enum: ePlatform.values, required: true }, // A = Android, I = iOS, W = Web, O = Other, AD = Admin
+  eType: { type: String, enum: eAdminLogTypes.values }, // L = Login, PC = Password Change, RP = Reset Password
   sDeviceToken: { type: String },
   sIpAddress: { type: String },
   dUpdatedAt: { type: Date },

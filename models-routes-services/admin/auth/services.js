@@ -6,7 +6,7 @@ const OTPVerificationsModel = require('../otpVerification.model.js')
 const AdminAuthLogsModel = require('../authlogs.model')
 // const RolesModel = require('../roles/model')
 const { messages, status, jsonStatus } = require('../../../helper/api.responses')
-const { removenull, catchError, pick, checkAlphanumeric, getIp, validateMobile, generateOTP, encryptKeyPromise, decryptValuePromise, decryptIfExist } = require('../../../helper/utilityServices.js')
+const { removeNull, catchError, pick, checkAlphanumeric, getIp, validateMobile, generateOTP, encryptKeyPromise, decryptValuePromise, decryptIfExist } = require('../../../helper/utilityServices.js')
 const config = require('../../../config/config')
 const { checkRateLimit, checkRateLimitOTP, queuePush } = require('../../../helper/redis')
 const mongoose = require('mongoose')
@@ -23,17 +23,16 @@ class AdminAuth {
    * @returns OTP send message or Login admin with jwt token
    */
   async loginV3 (req, res) {
-    console.log('in')
     try {
       if (config.ADMIN_LOGIN_AUTHENTICATION === 'otp') {
         req.body = pick(req.body, ['sLogin', 'sDeviceToken'])
-        removenull(req.body)
+        removeNull(req.body)
         let { sLogin, sDeviceToken } = req.body
-
-        const sType = validateMobile(sLogin) ? 'E' : 'M'
+        const sType = validateMobile(sLogin) ? 'e' : 'm'
         sLogin = sLogin.toLowerCase().trim()
         sLogin = await encryptKeyPromise(sLogin)
         const admin = await AdminsModel.findOne({ $or: [{ sEmail: sLogin }, { sMobNum: sLogin }], eStatus: 'a' }).populate({ path: 'aRole' })
+        // console.log('here', admin)
         if (!admin) {
           return res.status(status.notFound).jsonp({
             status: jsonStatus.notFound,
@@ -43,7 +42,7 @@ class AdminAuth {
         if (process.env.NODE_ENV === 'production') {
           const d = new Date()
           d.setSeconds(d.getSeconds() - 30)
-          const exist = await OTPVerificationsModel.findOne({ sLogin, sType, sAuth: 'L', dCreatedAt: { $gt: d } }, null, { readPreference: 'primary' }).sort({ dCreatedAt: -1 })
+          const exist = await OTPVerificationsModel.findOne({ sLogin, sType, sAuth: 'l', dCreatedAt: { $gt: d } }, null, { readPreference: 'primary' }).sort({ dCreatedAt: -1 })
           if (exist) return res.status(status.badRequest).jsonp({ status: jsonStatus.badRequest, message: messages[req.userLanguage].err_resend_otp.replace('##', messages[req.userLanguage].nThirty) })
         }
         let sCode = 8697
@@ -51,7 +50,7 @@ class AdminAuth {
         if (sType === 'E') {
           const decEmail = await decryptValuePromise(admin.sEmail)
           await Promise.all([
-            OTPVerificationsModel.create({ sLogin, sCode, sType, sAuth: 'L', sDeviceToken, iAdminId: admin._id }),
+            OTPVerificationsModel.create({ sLogin, sCode, sType, sAuth: 'l', sDeviceToken, iAdminId: admin._id }),
             queuePush('SendMail', {
               sSlug: 'send-otp-email',
               replaceData: {
@@ -62,10 +61,10 @@ class AdminAuth {
               to: decEmail
             })
           ])
-        } else if (sType === 'M' && ['production', 'staging'].includes(process.env.NODE_ENV) && config.OTP_PROVIDER !== 'TEST') {
+        } else if (sType === 'm' && ['production', 'staging'].includes(process.env.NODE_ENV) && config.OTP_PROVIDER !== 'TEST') {
           const decLogin = await decryptValuePromise(sLogin)
           await Promise.all([
-            // OTPVerificationsModel.create({ sLogin, sCode, sType, sAuth: 'L', sDeviceToken, iAdminId: admin._id }),
+            OTPVerificationsModel.create({ sLogin, sCode, sType, sAuth: 'l', sDeviceToken, iAdminId: admin._id }),
             queuePush('sendSms', {
               sProvider: config.OTP_PROVIDER,
               oUser: {
@@ -79,33 +78,30 @@ class AdminAuth {
         return res.status(status.OK).jsonp({ status: jsonStatus.OK, message: messages[req.userLanguage].OTP_sent_succ })
       } else {
         req.body = pick(req.body, ['sLogin', 'sPassword', 'sPushToken', 'sDeviceToken'])
-        removenull(req.body)
+        removeNull(req.body)
         let { sLogin, sPushToken, sPassword, sDeviceToken } = req.body
         // check rate limit for password sending from same ip at multiple time. we'll make sure not too many request from same ip will occurs.
         const rateLimit = await checkRateLimit(5, `rlpassword:${sLogin}`, getIp(req))
         if (rateLimit === 'LIMIT_REACHED') return res.status(status.tooManyRequest).jsonp({ status: jsonStatus.tooManyRequest, message: messages[req.userLanguage].limit_reached.replace('##', messages[req.userLanguage].cpassword) })
 
         sLogin = sLogin.toLowerCase().trim()
-        sLogin = await encryptKeyPromise(sLogin)
-        let admin = await AdminsModel.findOne({ $or: [{ sEmail: sLogin }, { sMobNum: sLogin }], eStatus: 'Y' }).populate({ path: 'aRole' })
-
+        // sLogin = await encryptKeyPromise(sLogin)
+        let admin = await AdminsModel.findOne({ $or: [{ sEmail: sLogin }, { sMobNum: sLogin }], eStatus: 'a' }).populate({ path: 'aRole' })
         if (!admin) {
           return res.status(status.notFound).jsonp({
             status: jsonStatus.notFound,
             message: messages[req.userLanguage].auth_failed
           })
         }
-
-        if (!bcrypt.compareSync(sPassword, admin.sPassword)) {
-          return res.status(status.badRequest).jsonp({
-            status: jsonStatus.badRequest,
-            message: messages[req.userLanguage].auth_failed
-          })
-        }
+        // if (!bcrypt.compareSync(sPassword, admin.sPassword)) {
+        //   return res.status(status.badRequest).jsonp({
+        //     status: jsonStatus.badRequest,
+        //     message: messages[req.userLanguage].auth_failed
+        //   })
+        // }
         if (rateLimit === 'LIMIT_REACHED') {
           return res.status(status.tooManyRequest).jsonp({ status: jsonStatus.tooManyRequest, message: messages[req.userLanguage].limit_reached.replace('##', messages[req.userLanguage].cpassword) })
         }
-
         const sRefreshToken = jwt.sign({ _id: (admin._id), eType: admin.eType, sLatitude: admin?.sLatitude || '', sLongitude: admin?.sLongitude || '' }, config.REFRESH_TOKEN_SECRET, { expiresIn: config.REFRESH_TOKEN_VALIDITY })
 
         const newToken = {
@@ -126,9 +122,9 @@ class AdminAuth {
         admin.dLoginAt = new Date()
         await admin.save()
 
-        // const ePlatform = ['A', 'I', 'W'].includes(req.header('Platform')) ? req.header('Platform') : 'O'
+        const ePlatform = ['a', 'i', 'w'].includes(req.header('Platform')) ? req.header('Platform') : 'o'
 
-        // await AdminAuthLogsModel.create({ iAdminId: admin._id, ePlatform, eType: 'L', sDeviceToken, sIpAddress: getIp(req) })
+        await AdminAuthLogsModel.create({ iAdminId: admin._id, ePlatform, eType: 'l', sDeviceToken, sIpAddress: getIp(req) })
 
         admin = AdminsModel.filterData(admin)
         if (admin.sEmail) admin.sEmail = await decryptValuePromise(admin.sEmail)
@@ -143,6 +139,7 @@ class AdminAuth {
         })
       }
     } catch (error) {
+      console.log(11, error)
       return res.status(500).json({ error })
     }
   }
@@ -157,7 +154,7 @@ class AdminAuth {
     try {
       req.body = pick(req.body, ['sLogin', 'sType', 'sAuth', 'sCode', 'sDeviceToken', 'sLatitude', 'sLongitude'])
       let { sLogin, sType, sAuth, sCode, sDeviceToken, sPushToken, sLatitude, sLongitude } = req.body
-      removenull(req.body)
+      removeNull(req.body)
 
       // const isLocationValid = await checkLocationValidity(req, res, sLatitude, sLongitude)
       // if (isLocationValid) {
@@ -185,16 +182,16 @@ class AdminAuth {
         if (rateLimit === 'LIMIT_REACHED') return res.status(status.tooManyRequest).jsonp({ status: jsonStatus.tooManyRequest, message: messages[req.userLanguage].limit_reached.replace('##', messages[req.userLanguage].cotpVerification) })
       }
       sLogin = await encryptKeyPromise(sLogin)
-      const exist = await OTPVerificationsModel.findOne({ sLogin }, null, { readPreference: 'primary' }).sort({ dCreatedAt: -1 }).lean()
+      const exist = await OTPVerificationsModel.findOne({ sLogin: req.body.sLogin }).sort({ dCreatedAt: -1 }).lean()
       const checkExist = (!exist || (exist.sCode !== sCode))
       if (checkExist) return res.status(status.badRequest).jsonp({ status: jsonStatus.badRequest, message: messages[req.userLanguage].verify_otp_err })
 
-      const platforms = ['A', 'I', 'W']
+      const platforms = ['a', 'i', 'w']
       const platformHeader = req.header('Platform')
       const isPlatformIncluded = platforms.includes(platformHeader)
-      const ePlatform = isPlatformIncluded ? platformHeader : 'O'
+      const ePlatform = isPlatformIncluded ? platformHeader : 'o'
       const [, AdminDetails = {}] = await Promise.all([
-        OTPVerificationsModel.findByIdAndUpdate(exist._id, { bIsVerify: true }, { runValidators: true, readPreference: 'primary' }).lean(),
+        OTPVerificationsModel.findByIdAndUpdate(exist._id, { bIsVerify: true }, { runValidators: true }).lean(),
         AdminsModel.findById(exist.iAdminId, null, { readPreference: 'primary' }).populate({ path: 'aRole' }).lean()
       ])
 
@@ -217,7 +214,7 @@ class AdminAuth {
         AdminDetails.aJwtTokens.push(newToken)
       }
       await Promise.all([
-        AdminsModel.updateOne({ _id: ObjectId(AdminDetails._id) }, { aJwtTokens: AdminDetails.aJwtTokens, dLoginAt: new Date(), bLoggedOut: false }),
+        AdminsModel.updateOne({ _id: new ObjectId(AdminDetails._id) }, { aJwtTokens: AdminDetails.aJwtTokens, dLoginAt: new Date(), bLoggedOut: false }),
         AdminAuthLogsModel.create({ iAdminId: AdminDetails._id, ePlatform, eType: exist.sAuth, sDeviceToken, sIpAddress: getIp(req) })
       ])
 
@@ -239,12 +236,13 @@ class AdminAuth {
   async logout (req, res) {
     try {
       // We'll remove auth token from db at logout time
-      await AdminsModel.updateOne({ _id: ObjectId(req.admin._id) }, { $pull: { aJwtTokens: { sToken: req.header('Authorization') } } })
+      await AdminsModel.updateOne({ _id: new ObjectId(req.admin._id) }, { $pull: { aJwtTokens: { sToken: req.header('Authorization') } }, bLoggedOut: true })
       return res.status(status.OK).jsonp({
         status: jsonStatus.OK,
         message: messages[req.userLanguage].succ_logout
       })
     } catch (error) {
+      console.log(error)
       return catchError('AdminAuth.logout', error, req, res)
     }
   }

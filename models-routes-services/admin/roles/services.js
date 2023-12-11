@@ -22,7 +22,7 @@ class Role {
       const isNameExist = await RolesModel.findOne({ sName: { $regex: `^${sName}$`, $options: 'i' } }, { _id: 1 }).lean() // finding role with case insensitive name
       if (isNameExist) return res.status(status.resourceExist).jsonp({ status: jsonStatus.resourceExist, message: messages[req.userLanguage].already_exist.replace('##', messages[req.userLanguage].cRoleName) })
 
-      const aPermission = await PermissionsModel.find({ eStatus: 'Y' }, { sKey: 1, _id: 0 }).lean()
+      const aPermission = await PermissionsModel.find({ eStatus: 'a' }, { sKey: 1, _id: 0 }).lean()
       if (!aPermission.length) return res.status(status.notFound).jsonp({ status: jsonStatus.notFound, message: messages[req.userLanguage].not_exist.replace('##', messages[req.userLanguage].permission) })
 
       //  We'll check that all permission includes in our db are exist inside given role permission.

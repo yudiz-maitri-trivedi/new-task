@@ -3,6 +3,7 @@ const { status, messages, jsonStatus } = require('../helper/api.responses')
 const config = require('../config/config')
 const { randomInt } = require('crypto')
 const { PUBLIC_KEY, ENCRYPTION_KEY, IV_VALUE } = require('../config/config')
+const RSA = require('hybrid-crypto-js').RSA
 const Crypt = require('hybrid-crypto-js').Crypt
 const crypt = new Crypt()
 // const { imageFormat } = require('../enum')
@@ -133,7 +134,7 @@ function encryptKey (value) {
   if (value) {
     const message = CryptoJS.enc.Utf8.parse(value)
     const encrypted = CryptoJS.AES.encrypt(message, encryptedKey, {
-      iv: iv,
+      iv,
       mode: CryptoJS.mode.CBC,
       padding: CryptoJS.pad.Pkcs7
     })
@@ -148,7 +149,7 @@ function encryptKeyPromise (value) {
       if (value) {
         const message = CryptoJS.enc.Utf8.parse(value)
         const encrypted = CryptoJS.AES.encrypt(message, encryptedKey, {
-          iv: iv,
+          iv,
           mode: CryptoJS.mode.CBC,
           padding: CryptoJS.pad.Pkcs7
         })
@@ -156,6 +157,7 @@ function encryptKeyPromise (value) {
         resolve(cipherText)
       }
     } catch (error) {
+      console.log(error)
       reject(error)
     }
   })
@@ -163,7 +165,7 @@ function encryptKeyPromise (value) {
 
 function decryptValue (key) {
   if (key) {
-    const decrypted = CryptoJS.AES.decrypt(key, encryptedKey, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 })
+    const decrypted = CryptoJS.AES.decrypt(key, encryptedKey, { iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 })
     const decryptedMessage = decrypted?.toString(CryptoJS.enc.Utf8)
     if (decryptedMessage.length) { return decryptedMessage }
 
@@ -175,7 +177,7 @@ function decryptValuePromise (key) {
   return new Promise((resolve, reject) => {
     try {
       if (key) {
-        const decrypted = CryptoJS.AES.decrypt(key, encryptedKey, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 })
+        const decrypted = CryptoJS.AES.decrypt(key, encryptedKey, { iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 })
         const decryptedMessage = decrypted?.toString(CryptoJS.enc.Utf8)
         if (decryptedMessage.length) { resolve(decryptedMessage) }
         resolve(key)
@@ -199,5 +201,13 @@ function maskIfExist (object, fields) {
     if (object?.[field]) object[field] = ''
   })
 }
-
+function generateKeyPair() {
+  const rsa = new RSA()
+  rsa.generateKeyPairAsync().then(keyPair => {
+    const publicKey = keyPair.publicKey
+    const privateKey = keyPair.privateKey
+    console.log(11, 'privateKey', privateKey)
+    console.log(22, 'publicKey', publicKey)
+  })
+}
 module.exports = { catchError, generateToken, removeNull, getPaginationValues, encryption, getIp, defaultSearch, encryptKey, encryptKeyPromise, decryptIfExist, maskIfExist, decryptValue, decryptValuePromise, responseMessage, pick, checkValidImageType, validateMobile, checkAlphaNumeric, generateOTP }

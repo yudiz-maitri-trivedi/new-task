@@ -3,7 +3,7 @@ const permissionServices = require('./services')
 const validators = require('./validators')
 const { validateAdmin } = require('../../../middleware/middleware')
 
-router.post('/admin/permission/v1', validators.permissionAdd, validateAdmin('PERMISSION', 'W'), permissionServices.add)
+router.post('/admin/permission/v1', validators.permissionAdd, validateAdmin('PERMISSION', 'w'), permissionServices.add)
 
 router.get('/admin/permission/v1', validateAdmin('PERMISSION', 'R'), permissionServices.list)
 
